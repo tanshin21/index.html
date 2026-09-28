@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bangladesh Gold & Silver Market</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#17202a}
+header{background:#111827;color:#fff;text-align:center;padding:34px 18px}
+header h1{margin:0 0 8px}
+header p{margin:0;color:#d8dee8}
+.container{max-width:1100px;margin:28px auto;padding:0 16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px}
+.card{background:#fff;border-radius:16px;padding:22px;box-shadow:0 5px 20px rgba(0,0,0,.07)}
+.card h2{margin-top:0}
+.live{border-left:5px solid #16a34a}
+.loading{color:#666}
+.price{font-size:28px;font-weight:bold;margin:10px 0}
+.small{font-size:13px;color:#657180;line-height:1.5}
+.row{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid #edf0f3}
+.row:last-child{border-bottom:0}
+label{display:block;font-weight:bold;margin:14px 0 7px}
+select,input,button{width:100%;padding:13px;border:1px solid #ccd3dc;border-radius:9px;font-size:16px}
+button{margin-top:18px;background:#111827;color:white;border:0;cursor:pointer}
+button:hover{background:#253246}
+.result{margin-top:18px;padding:18px;background:#f7f9fb;border-radius:10px;line-height:1.8}
+.notice{background:#fff8e6;border:1px solid #f0d58a;border-radius:12px;padding:14px;margin-bottom:20px}
+footer{text-align:center;color:#687381;padding:28px 15px}
+@media(max-width:520px){.card{padding:18px}.price{font-size:23px}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Gold & Silver Market — Bangladesh</h1>
+  <p>Global spot market → USD/BDT → purity → BDT/gram → BDT/bhori</p>
+</header>
+
+<div class="container">
+
+  <div class="notice">
+    <strong>How this website calculates the global-derived value</strong><br>
+    Global metal price is quoted in USD per troy ounce. The website converts it to BDT using
+    USD/BDT, converts troy ounce to grams, and then applies the selected purity.
+    <div class="small">
+      1 troy oz = 31.1034768 g &nbsp;•&nbsp; 1 bhori = 11.664 g
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+      <div>
+        <strong id="marketStatus">Connecting to live market feeds…</strong>
+        <div class="small" id="marketUpdated">Waiting for first successful update.</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button id="refreshButton" type="button" style="width:auto;margin-top:0;padding:10px 18px" onclick="loadMarket(true)">
+          Refresh now
+        </button>
+        <button type="button" style="width:auto;margin-top:0;padding:10px 18px;background:#475569" onclick="testFeeds()">
+          Test feeds
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+
+    <div class="card live">
+      <h2>Live Global Gold</h2>
+      <div id="goldSpot" class="price loading">Loading...</div>
+      <div class="small" id="goldTime">Fetching global spot price...</div>
+      <div class="row"><span>BDT / gram, 24K</span><strong id="goldGram">—</strong></div>
+      <div class="row"><span>BDT / bhori, 24K</span><strong id="goldBhori">—</strong></div>
+    </div>
+
+    <div class="card live">
+      <h2>Live Global Silver</h2>
+      <div id="silverSpot" class="price loading">Loading...</div>
+      <div class="small" id="silverTime">Fetching global spot price...</div>
+      <div class="row"><span>BDT / gram, 24K</span><strong id="silverGram">—</strong></div>
+      <div class="row"><span>BDT / bhori, 24K</span><strong id="silverBhori">—</strong></div>
+    </div>
+
+    <div class="card">
+      <h2>USD → BDT</h2>
+      <div class="price" id="fxRate">Loading...</div>
+      <div class="small" id="fxTime">Fetching exchange rate...</div>
+      <div class="small">
+        The free FX source updates periodically, so this is a reference conversion rate,
+        not a guaranteed bank/dealer transaction rate.
+      </div>
+    </div>
+
+  </div>
+
+  <div class="card" style="margin-top:20px">
+    <h2>Global-Market Value Calculator</h2>
+
+    <label for="metal">Metal</label>
+    <select id="metal">
+      <option value="gold">Gold</option>
+      <option value="silver">Silver</option>
+    </select>
+
+    <label for="purity">Purity</label>
+    <select id="purity">
+      <option value="24">24K</option>
+      <option value="22">22K</option>
+      <option value="21">21K</option>
+      <option value="18">18K</option>
+    </select>
+
+    <label for="weight">Weight (grams)</label>
+    <input id="weight" type="number" min="0" step="0.001" placeholder="Example: 17.5">
+
+    <button onclick="calculateGlobalValue()">Calculate Global-Derived Value</button>
+    <div id="globalResult" class="result">Enter weight and choose purity.</div>
+  </div>
+
+  <div class="grid" style="margin-top:20px">
+
+    <div class="card">
+      <h2>Bangladesh Reference Price</h2>
+      <div class="small">
+        These are Bangladesh market reference figures and are intentionally kept separate
+        from the global-spot calculation.
+      </div>
+
+      <div class="row"><span>Gold 22K / bhori</span><strong>৳230,772</strong></div>
+      <div class="row"><span>Gold 21K / bhori</span><strong>৳220,391</strong></div>
+      <div class="row"><span>Gold 18K / bhori</span><strong>৳189,248</strong></div>
+      <div class="row"><span>Silver 22K / bhori</span><strong>৳4,491</strong></div>
+      <div class="row"><span>Silver 21K / bhori</span><strong>৳4,316</strong></div>
+      <div class="row"><span>Silver 18K / bhori</span><strong>৳3,732</strong></div>
+
+      <p class="small">
+        Reference figures shown from the Bangladesh rates used in this project.
+        They should be refreshed whenever the relevant Bangladesh authority announces
+        a new rate.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Sell Estimate</h2>
+      <p class="small">
+        This estimates the metal value from the live global-derived calculation.
+        It is not a guaranteed cash offer from a jeweller.
+      </p>
+
+      <label for="sellMetal">Metal</label>
+      <select id="sellMetal">
+        <option value="silver">Silver</option>
+        <option value="gold">Gold</option>
+      </select>
+
+      <label for="sellPurity">Purity</label>
+      <select id="sellPurity">
+        <option value="22">22K</option>
+        <option value="21">21K</option>
+        <option value="18">18K</option>
+        <option value="24">24K</option>
+      </select>
+
+      <label for="sellWeight">Weight (grams)</label>
+      <input id="sellWeight" type="number" min="0" step="0.001" placeholder="Example: 17.5">
+
+      <button onclick="sellEstimate()">Estimate</button>
+      <div id="sellResult" class="result">Enter the item's weight.</div>
+    </div>
+
+  </div>
+
+</div>
+
+<footer>
+  Live spot source: Gold API • FX source: ExchangeRate-API (Open) • Auto-refresh: 60 seconds • Values are indicative reference calculations.
+</footer>
+
+<script>
+const TROY_OZ_GRAMS = 31.1034768;
+const BHORI_GRAMS = 11.664;
+
+const API = {
+  gold: "https://api.gold-api.com/price/XAU",
+  silver: "https://api.gold-api.com/price/XAG",
+  fx: "https://open.er-api.com/v6/latest/USD"
+};
+
+let market = {
+  goldUsdOz: null,
+  silverUsdOz: null,
+  usdBdt: null
+};
+
+let refreshing = false;
+
+function money(n) {
+  return "৳" + Number(n).toLocaleString("en-BD", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
+function usd(n) {
+  return "$" + Number(n).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
+function purityFactor(k) {
+  return Number(k) / 24;
+}
+
+function globalBdtPerGram(metal, purity) {
+  const usdOz = metal === "gold" ? market.goldUsdOz : market.silverUsdOz;
+  if (!Number.isFinite(usdOz) || !Number.isFinite(market.usdBdt)) return null;
+  return (usdOz * market.usdBdt / TROY_OZ_GRAMS) * purityFactor(purity);
+}
+
+/*
+  Important:
+  - cache:"no-store" prevents the browser from reusing an old response.
+  - the timestamp query parameter also defeats aggressive intermediary caching.
+  - AbortController prevents a dead API from hanging the whole page.
+*/
+async function getJSON(url, timeoutMs = 12000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    // IMPORTANT: Gold API expects the exact endpoint path.
+    // Do NOT append a cache-busting query string: this API currently
+    // returns 404 when ?_=... is appended to /price/XAU or /price/XAG.
+    const response = await fetch(url, {
+      method: "GET",
+      cache: "no-store",
+      mode: "cors",
+      signal: controller.signal,
+      headers: { "Accept": "application/json" }
+    });
+
+    if (!response.ok) {
+      throw new Error("HTTP " + response.status);
+    }
+
+    return await response.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function setStatus(text, good = false) {
+  const el = document.getElementById("marketStatus");
+  el.textContent = text;
+  el.style.color = good ? "#15803d" : "";
+}
+
+function setUpdated() {
+  const now = new Date();
+  document.getElementById("marketUpdated").textContent =
+    "Last successful page update: " + now.toLocaleString();
+}
+
+function updateConvertedPrices() {
+  if (!Number.isFinite(market.usdBdt)) return;
+
+  if (Number.isFinite(market.goldUsdOz)) {
+    const gram = market.goldUsdOz * market.usdBdt / TROY_OZ_GRAMS;
+    document.getElementById("goldGram").textContent = money(gram);
+    document.getElementById("goldBhori").textContent =
+      money(gram * BHORI_GRAMS);
+  }
+
+  if (Number.isFinite(market.silverUsdOz)) {
+    const gram = market.silverUsdOz * market.usdBdt / TROY_OZ_GRAMS;
+    document.getElementById("silverGram").textContent = money(gram);
+    document.getElementById("silverBhori").textContent =
+      money(gram * BHORI_GRAMS);
+  }
+}
+
+async function loadGold() {
+  try {
+    const data = await getJSON(API.gold);
+    const price = Number(data.price);
+
+    if (!Number.isFinite(price) || price <= 0) {
+      throw new Error("API returned an invalid gold price");
+    }
+
+    market.goldUsdOz = price;
+
+    document.getElementById("goldSpot").textContent =
+      usd(price) + " / troy oz";
+    document.getElementById("goldSpot").classList.remove("loading");
+
+    document.getElementById("goldTime").textContent =
+      "Live feed updated: " +
+      (data.updatedAtReadable || data.updatedAt || "just now");
+
+    updateConvertedPrices();
+    return true;
+  } catch (error) {
+    console.error("Gold feed error:", error);
+    document.getElementById("goldTime").textContent =
+      "Gold feed error: " + error.message;
+    return false;
+  }
+}
+
+async function loadSilver() {
+  try {
+    const data = await getJSON(API.silver);
+    const price = Number(data.price);
+
+    if (!Number.isFinite(price) || price <= 0) {
+      throw new Error("API returned an invalid silver price");
+    }
+
+    market.silverUsdOz = price;
+
+    document.getElementById("silverSpot").textContent =
+      usd(price) + " / troy oz";
+    document.getElementById("silverSpot").classList.remove("loading");
+
+    document.getElementById("silverTime").textContent =
+      "Live feed updated: " +
+      (data.updatedAtReadable || data.updatedAt || "just now");
+
+    updateConvertedPrices();
+    return true;
+  } catch (error) {
+    console.error("Silver feed error:", error);
+    document.getElementById("silverTime").textContent =
+      "Silver feed error: " + error.message;
+    return false;
+  }
+}
+
+async function loadFX() {
+  try {
+    const data = await getJSON(API.fx);
+    const rate = Number(data?.rates?.BDT);
+
+    if (!Number.isFinite(rate) || rate <= 0) {
+      throw new Error("API returned an invalid USD/BDT rate");
+    }
+
+    market.usdBdt = rate;
+
+    document.getElementById("fxRate").textContent =
+      "৳" + rate.toFixed(4);
+
+    document.getElementById("fxTime").textContent =
+      "1 USD ≈ " + money(rate) + " • " +
+      (data.time_last_update_utc || "latest published update");
+
+    updateConvertedPrices();
+    return true;
+  } catch (error) {
+    console.error("FX feed error:", error);
+    document.getElementById("fxTime").textContent =
+      "USD/BDT feed error: " + error.message;
+    return false;
+  }
+}
+
+async function loadMarket(manual = false) {
+  if (refreshing) return;
+  refreshing = true;
+
+  setStatus(manual ? "Refreshing live market data…" : "Connecting to live market feeds…");
+
+  const button = document.getElementById("refreshButton");
+  button.disabled = true;
+  button.textContent = "Refreshing…";
+
+  try {
+    // Run all three feeds at the same time.
+    const results = await Promise.all([
+      loadGold(),
+      loadSilver(),
+      loadFX()
+    ]);
+
+    const successCount = results.filter(Boolean).length;
+
+    if (successCount === 3) {
+      setStatus("● Live market data connected", true);
+      setUpdated();
+    } else if (successCount > 0) {
+      setStatus(successCount + "/3 live feeds connected");
+      setUpdated();
+    } else {
+      setStatus("Live feeds could not be reached");
+      document.getElementById("marketUpdated").textContent =
+        "Check your internet connection or browser console.";
+    }
+  } finally {
+    refreshing = false;
+    button.disabled = false;
+    button.textContent = "Refresh now";
+  }
+}
+
+function calculateGlobalValue() {
+  const metal = document.getElementById("metal").value;
+  const purity = Number(document.getElementById("purity").value);
+  const weight = Number(document.getElementById("weight").value);
+  const result = document.getElementById("globalResult");
+
+  if (!weight || weight <= 0) {
+    result.textContent = "Please enter a valid weight.";
+    return;
+  }
+
+  const perGram = globalBdtPerGram(metal, purity);
+
+  if (!Number.isFinite(perGram)) {
+    result.textContent = "Live market data has not loaded yet.";
+    return;
+  }
+
+  const perBhori = perGram * BHORI_GRAMS;
+  const total = perGram * weight;
+
+  result.innerHTML =
+    "<strong>Global-derived price / gram:</strong> " + money(perGram) +
+    "<br><strong>Global-derived price / bhori:</strong> " + money(perBhori) +
+    "<br><strong>Weight:</strong> " + weight.toFixed(3) + " g" +
+    "<br><strong>Estimated metal value:</strong> " + money(total);
+}
+
+function sellEstimate() {
+  const metal = document.getElementById("sellMetal").value;
+  const purity = Number(document.getElementById("sellPurity").value);
+  const weight = Number(document.getElementById("sellWeight").value);
+  const result = document.getElementById("sellResult");
+
+  if (!weight || weight <= 0) {
+    result.textContent = "Please enter a valid weight.";
+    return;
+  }
+
+  const perGram = globalBdtPerGram(metal, purity);
+
+  if (!Number.isFinite(perGram)) {
+    result.textContent = "Live market data has not loaded yet.";
+    return;
+  }
+
+  const total = perGram * weight;
+
+  result.innerHTML =
+    "<strong>Global-derived metal value:</strong> " + money(total) +
+    "<br><span class='small'>Actual shop offers may be lower because of testing, purity, stones, deductions, margins and local buying policies.</span>";
+}
+
+async function testFeeds() {
+  const status = document.getElementById("marketStatus");
+  const updated = document.getElementById("marketUpdated");
+  status.textContent = "Testing exact API endpoints…";
+  updated.textContent = "No cache-busting query is used.";
+
+  const results = [];
+
+  for (const [name, url] of Object.entries(API)) {
+    try {
+      const data = await getJSON(url);
+      results.push(name.toUpperCase() + ": OK");
+      console.log(name + " API OK:", data);
+    } catch (error) {
+      results.push(name.toUpperCase() + ": " + error.message);
+      console.error(name + " API FAILED:", error);
+    }
+  }
+
+  updated.textContent = results.join(" • ");
+  status.textContent = results.every(x => x.endsWith(": OK"))
+    ? "● All API feeds are reachable"
+    : "Some API feeds failed — see Console";
+}
+
+// First load immediately.
+loadMarket();
+
+// Refresh every 60 seconds.
+setInterval(() => loadMarket(false), 60000);
+
+// Also refresh when the user returns to the browser tab.
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) loadMarket(false);
+});
+</script>
+
+</body>
+</html>
